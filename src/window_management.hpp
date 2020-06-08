@@ -11,4 +11,4 @@ namespace msb
 GLFWwindow* initializeWindow();
 void processInput(CameraState& state);
 
-}
+} // namespace msb

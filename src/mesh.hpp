@@ -35,13 +35,13 @@ class Mesh
          std::vector<unsigned int> indices, std::vector<Texture> textures);
 
     Mesh() = delete;
-    Mesh(const Mesh &) = delete;
-    Mesh operator=(const Mesh &) = delete;
-    Mesh(Mesh &&) = default;
-    Mesh &operator=(Mesh &&) = default;
+    Mesh(const Mesh&) = delete;
+    Mesh operator=(const Mesh&) = delete;
+    Mesh(Mesh&&) = default;
+    Mesh& operator=(Mesh&&) = default;
     ~Mesh() = default;
 
-    void Draw(const Shader &shader) const;
+    void Draw(const Shader& shader) const;
 
     std::vector<float> vertices() const { return vertices_; }
     std::vector<unsigned int> indices() const { return indices_; }
@@ -61,6 +61,6 @@ class Mesh
 Texture initTexture(std::string filename, std::string tex_type, unsigned int edge,
                     unsigned int interp, unsigned int cmap);
 
-std::ostream &operator<<(std::ostream &os, const Mesh &mesh);
+std::ostream& operator<<(std::ostream& os, const Mesh& mesh);
 
 } // namespace msb
