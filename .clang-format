@@ -6,3 +6,4 @@ Language: Cpp
 
 BreakBeforeBraces: Allman
 PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline

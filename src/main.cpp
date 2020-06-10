@@ -32,12 +32,19 @@ int main()
     auto [v_beach, f_beach] =
         msb::getTerrain("resources/bathy.png", "resources/bathy_norms.png", 50, 50);
 
-    std::vector<msb::Texture> beach_tex = {msb::initTexture(
-        "resources/sand.png", "texture_diffuse", GL_MIRRORED_REPEAT, GL_LINEAR, GL_SRGB)};
+    std::vector<msb::Texture> beach_tex = {
+        msb::initTexture("resources/Sand 002/Sand 002_COLOR.jpg", "texture_diffuse",
+                         GL_MIRRORED_REPEAT, GL_LINEAR, GL_SRGB),
+        msb::initTexture("resources/Sand 002/Sand 002_NRM.jpg", "texture_diffuse",
+                         GL_MIRRORED_REPEAT, GL_LINEAR, GL_RGB),
+        msb::initTexture("resources/Sand 002/Sand 002_OCC.jpg", "texture_diffuse",
+                         GL_MIRRORED_REPEAT, GL_LINEAR, GL_RGB)};
 
     auto mesh_beach = msb::Mesh(v_beach, {3, 3, 2, 3}, f_beach, beach_tex);
     msb::Model model_beach(std::move(mesh_beach));
-    Shader shader_beach("shaders/model_test.vert", "shaders/model_test.frag");
+    Shader shader_beach("shaders/tbn_tex.vert", "shaders/tbn_tex.frag");
+	shader_beach.setInt("env_map", 3);
+	shader_beach.setInt("brdf_map", 4);
 
     // auto [v_cube, f_cube] = makeSkybox();
     // auto skybox_vao = fillBuffers(v_cube);
@@ -67,10 +74,7 @@ int main()
     shader.setVec3("dir_light.diffuse", .3f, .3f, .3f);
     shader.setVec3("dir_light.specular", .8f, .8f, .8f);
 
-    shader_beach.setVec3("dir_light.direction", dir_light_vec);
-    shader_beach.setVec3("dir_light.ambient", 0.2f, 0.2f, 0.2f);
-    shader_beach.setVec3("dir_light.diffuse", .8f, .8f, .8f);
-    shader_beach.setVec3("dir_light.specular", .0f, .0f, .0f);
+    shader_beach.setVec3("light_dir", dir_light_vec);
 
     CameraState state(window);
     glfwSetWindowUserPointer(window, &state);
@@ -103,13 +107,14 @@ int main()
         auto model_mat = glm::mat4(1.0f);
 
         // Beach
-        shader_beach.setVec3("dir_light.direction",
-                             glm::vec3(state.viewMatrix() * glm::vec4(dir_light_vec, 0.0)));
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
+		glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, brdf_map_id);
         shader_beach.setMat4("model", model_mat);
         shader_beach.setMat4("view", state.viewMatrix());
         shader_beach.setMat4("projection", state.projectionMatrix());
-        shader_beach.setMat3(
-            "invmodel", glm::mat3(glm::transpose(glm::inverse(state.viewMatrix() * model_mat))));
+        shader_beach.setVec3("cam_pos", state.cameraPosition());
         model_beach.Draw(shader_beach);
 
         // Waves
