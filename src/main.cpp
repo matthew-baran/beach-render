@@ -38,13 +38,15 @@ int main()
         msb::initTexture("resources/Sand 002/Sand 002_NRM.jpg", "texture_diffuse",
                          GL_MIRRORED_REPEAT, GL_LINEAR, GL_RGB),
         msb::initTexture("resources/Sand 002/Sand 002_OCC.jpg", "texture_diffuse",
+                         GL_MIRRORED_REPEAT, GL_LINEAR, GL_RGB),
+        msb::initTexture("resources/Sand 002/Sand 002_DISP.jpg", "texture_diffuse",
                          GL_MIRRORED_REPEAT, GL_LINEAR, GL_RGB)};
 
     auto mesh_beach = msb::Mesh(v_beach, {3, 3, 2, 3}, f_beach, beach_tex);
     msb::Model model_beach(std::move(mesh_beach));
     Shader shader_beach("shaders/tbn_tex.vert", "shaders/tbn_tex.frag");
-	shader_beach.setInt("env_map", 3);
-	shader_beach.setInt("brdf_map", 4);
+    shader_beach.setInt("env_map", 4);
+    shader_beach.setInt("brdf_map", 5);
 
     // auto [v_cube, f_cube] = makeSkybox();
     // auto skybox_vao = fillBuffers(v_cube);
@@ -107,9 +109,9 @@ int main()
         auto model_mat = glm::mat4(1.0f);
 
         // Beach
-        glActiveTexture(GL_TEXTURE3);
+        glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
-		glActiveTexture(GL_TEXTURE4);
+        glActiveTexture(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_2D, brdf_map_id);
         shader_beach.setMat4("model", model_mat);
         shader_beach.setMat4("view", state.viewMatrix());

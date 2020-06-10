@@ -5,6 +5,7 @@ struct Material
     sampler2D texture_diffuse1;
     sampler2D texture_diffuse2;
     sampler2D texture_diffuse3;
+    sampler2D texture_diffuse4;
 };
 uniform Material material;
 
@@ -23,7 +24,8 @@ const float PI = 3.14159265359;
 
 out vec4 FragColor;
 
-vec3 skydomeLight(vec3 normal, vec3 view_dir, vec3 albedo);
+vec2 parallaxMapping(vec3 view_dir, vec2 uv_coords);
+vec3 skydomeLight(vec3 normal, vec3 view_dir, vec3 albedo, vec2 uv_coords);
 vec3 directionalLight(vec3 light_dir, vec3 normal, vec3 view_dir, vec3 albedo);
 
 // PBR
@@ -39,13 +41,14 @@ void main()
 
     vec3 view_dir = normalize(tan_cam_pos - tan_frag_pos);
 
-    vec3 albedo = texture(material.texture_diffuse1, tex_coords).rgb;
-    // vec3 tex_norm = texture(material.texture_diffuse2, tex_coords).rbg;     // Flip Z-up to Y-up -- make this a uniform optional?
-    // tex_norm = 2.0 * tex_norm - 1.0;
-    vec3 tex_norm = vec3(0, 1, 0);
+    vec2 disp_coords = parallaxMapping(view_dir, tex_coords);
+
+    vec3 albedo = texture(material.texture_diffuse1, disp_coords).rgb;
+    vec3 tex_norm = texture(material.texture_diffuse2, disp_coords).rgb;
+    tex_norm = 2.0 * tex_norm - 1.0;
 
     out_color += directionalLight(tan_light_dir, tex_norm, view_dir, albedo);
-    out_color += skydomeLight(tex_norm, view_dir, albedo);
+    out_color += skydomeLight(tex_norm, view_dir, albedo, disp_coords);
 
     // HDR stretch
     out_color = out_color / (out_color + vec3(1.0));
@@ -55,7 +58,40 @@ void main()
     FragColor = vec4(out_color, 1.0);
 }
 
-vec3 skydomeLight(vec3 normal, vec3 view_dir, vec3 albedo)
+vec2 parallaxMapping(vec3 view_dir, vec2 uv_coords)
+{
+    float height_scale = 0.1;
+
+    const float min_layers = 8;
+    const float max_layers = 32;
+    float num_layers = mix(max_layers, min_layers, max(dot(vec3(0.0, 0.0, 1.0), view_dir), 0.0));
+
+    float depth_step = 1.0 / num_layers;
+    float cur_depth = 0.0;
+    vec2 delta_uv = (view_dir.xy / view_dir.z) * height_scale / num_layers;
+
+    float depth_val = texture(material.texture_diffuse4, uv_coords).r;
+    float depth_prev = depth_val;
+
+    while (cur_depth < depth_val)
+    {
+        uv_coords -= delta_uv;
+        depth_prev = depth_val;
+        depth_val = texture(material.texture_diffuse4, uv_coords).r;
+        cur_depth += depth_step;
+    }
+
+    vec2 prev_uv = uv_coords + delta_uv;
+    float depth_after = depth_val - cur_depth;
+    float depth_before = depth_prev - cur_depth + depth_step;
+
+    float weight = depth_after / (depth_after - depth_before);
+    uv_coords = prev_uv * weight + uv_coords * (1.0 - weight);
+
+    return uv_coords;
+}
+
+vec3 skydomeLight(vec3 normal, vec3 view_dir, vec3 albedo, vec2 uv_coords)
 {
     // These should be uniforms
     float roughness = 0.95;
@@ -79,7 +115,7 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir, vec3 albedo)
     vec2 brdf = texture(brdf_map, vec2(max(dot(normal, view_dir), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
 
-    float ao = texture(material.texture_diffuse3, tex_coords).r;
+    float ao = texture(material.texture_diffuse3, uv_coords).r;
     vec3 ambient = (kD * diffuse + specular) * ao;
 
     return ambient;
@@ -93,7 +129,7 @@ vec3 directionalLight(vec3 light_dir, vec3 normal, vec3 view_dir, vec3 albedo)
     vec3 light_color = vec3(23.47, 21.31, 20.79) * .2;
     float roughness = 0.95; // water roughness
     vec3 F0 = vec3(0.02);   // water Fresnel normal incidence
-    float metalness = 0.01;  // assuming water is pure dielectric
+    float metalness = 0.01; // assuming water is pure dielectric
 
     vec3 halfway_dir = normalize(light_dir + view_dir);
 
@@ -102,7 +138,7 @@ vec3 directionalLight(vec3 light_dir, vec3 normal, vec3 view_dir, vec3 albedo)
     float D = DistributionGGX(normal, halfway_dir, roughness);
     float G = GeometrySmith(normal, view_dir, light_dir, roughness);
     vec3 kS = fresnelSchlick(dot(halfway_dir, view_dir), F0);
-    
+
     vec3 numerator = D * G * kS;
     float denominator = 4.0 * max(dot(normal, view_dir), 0.0) * max(dot(normal, light_dir), 0.0);
     vec3 specular = numerator / max(denominator, 0.001);
