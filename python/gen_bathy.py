@@ -17,7 +17,7 @@ plt.figure()
 plt.imshow(img)
 
 img = (img - np.min(img)) / (np.max(img) - np.min(img))
-img = (img - 0.5) * 2
+img = (img - 0.5) * 0.5
 
 img = np.stack((img, img, img, np.zeros(shape=(256,256))), axis=2)
 
@@ -29,10 +29,10 @@ mag = np.sum(np.square(norms), axis=2)
 mag = np.stack((mag,mag,mag), axis=2)
 norms = np.divide(norms, mag)
 norms = (norms + 1) / 2
-plt.imsave("bathy_norms.png", norms)
+plt.imsave("bathy_norms2.png", norms)
 
 img = (img - np.min(img)) / (np.max(img)-np.min(img))
-plt.imsave("bathy.png", img)
+plt.imsave("bathy2.png", img)
 
 plt.figure()
 plt.imshow(img)

@@ -94,7 +94,7 @@ void main()
     float max_foam_depth = 0.5;
     float foam_alpha = 0;
     //	if (surface_elev + max_foam_depth > 0)
-    if (TexCoords.y >= 0 && TexCoords.y <= 1)
+    if (TexCoords.y <= 1)
     {
         float v = 1 - clamp((max_foam_depth + surface_elev) / max_foam_depth, 0, 1);
         float u = WorldPos.z / 5;
@@ -111,23 +111,16 @@ void main()
         out_color = foam_color.rgb * foam_alpha + out_color * (1 - foam_alpha);
     }
 
-    //	if (surface_elev > -.15)
     if (TexCoords.y < 0)
     {
-        alpha = 0.0;
+        float fade_out_val = 0.15;
+        alpha = max(0.0, (fade_out_val + TexCoords.y) / fade_out_val);
     }
     else
     {
         alpha = max(foam_alpha, alpha);
-        //		alpha = 1.0;
     }
 
-    //	alpha = clamp((depth-0.15)/0.5, 0, 1);
-    //	alpha = 1;
-
-    //	vec3 debug = vec3(sign(new_norm.y) + 1) / 2;
-    //	FragColor = vec4(debug,1);
-    //	FragColor = vec4(texture(brdf_map, vec2(WorldPos.x/50, -WorldPos.z/50)).rg, 0.0, 1.0);
     FragColor = vec4(out_color, alpha);
 }
 

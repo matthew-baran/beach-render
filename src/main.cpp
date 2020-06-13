@@ -16,7 +16,7 @@ int main()
     auto [vertices, faces] = msb::getPlane(65, 50, .1, 10);
 
     std::vector<msb::Texture> ocean_tex = {
-        msb::initTexture("resources/bathy.png", "texture_diffuse", GL_CLAMP_TO_EDGE, GL_LINEAR,
+        msb::initTexture("resources/bathy2.png", "texture_diffuse", GL_CLAMP_TO_EDGE, GL_LINEAR,
                          GL_RGB),
         msb::initTexture("resources/foam2.png", "texture_diffuse", GL_MIRRORED_REPEAT, GL_LINEAR,
                          GL_RGBA)};
@@ -30,7 +30,7 @@ int main()
 
     // auto [v_beach, f_beach] = getQuad(50, 50, 10);
     auto [v_beach, f_beach] =
-        msb::getTerrain("resources/bathy.png", "resources/bathy_norms.png", 50, 50);
+        msb::getTerrain("resources/bathy2.png", "resources/bathy_norms2.png", 50, 50);
 
     std::vector<msb::Texture> beach_tex = {
         msb::initTexture("resources/Sand 002/Sand 002_COLOR.jpg", "texture_diffuse",
