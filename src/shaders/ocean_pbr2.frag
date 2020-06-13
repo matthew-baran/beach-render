@@ -121,6 +121,8 @@ void main()
         alpha = max(foam_alpha, alpha);
     }
 
+    // vec3 debug = max(vec3(0.0, 0.0, 0.0), -new_norm);
+    // FragColor = vec4(debug.y, 0.0, 0.0, 1.0);
     FragColor = vec4(out_color, alpha);
 }
 
@@ -128,7 +130,7 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir)
 {
     vec3 albedo = Color;
 
-    float roughness = 0.25;
+    float roughness = 0.15;
     float metalness = 0.01;
     vec3 F0 = vec3(0.02); // water Fresnel normal incidence
     F0 = mix(F0, albedo, metalness);
@@ -154,6 +156,7 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir)
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
     vec3 ambient = (kD * diffuse + specular);
+    // vec3 ambient = kD * diffuse;
 
     return ambient;
     //	return (ambient + diffuse + specular);
@@ -169,10 +172,10 @@ vec3 directionalLight(DirLight light, vec3 normal, vec3 view_dir)
 
     vec3 halfway_dir = normalize(light_dir + view_dir);
 
-    float roughness = 0.25; // water roughness
+    float roughness = 0.15; // water roughness
     vec3 F0 = vec3(0.02);   // water Fresnel normal incidence
 
-    float metalness = 0.1; // assuming water is pure dielectric
+    float metalness = 0.01; // assuming water is pure dielectric
     F0 = mix(F0, albedo, metalness);
 
     float D = DistributionGGX(normal, halfway_dir, roughness);

@@ -64,7 +64,7 @@ int main()
     auto waves = msb::makeGeomWaves();
     msb::initWaves(shader, waves, "geom_waves", geom_chop);
 
-    float tex_chop = 0.8;
+    float tex_chop = 0.0;
     auto tx_waves = msb::makeTexWaves(32);
     msb::initWaves(shader, tx_waves, "tex_waves", tex_chop);
 
