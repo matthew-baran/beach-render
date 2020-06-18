@@ -53,6 +53,8 @@ out vec4 FragColor;
 vec3 skydomeLight(vec3 normal, vec3 view_dir);
 vec3 directionalLight(DirLight light, vec3 normal, vec3 view_dir);
 vec3 getTexNormal();
+float getAttenuation(vec3 normal, vec3 view_dir);
+vec4 addFoam(vec4 in_color);
 
 // PBR
 float DistributionGGX(vec3 N, vec3 H, float a);
@@ -63,37 +65,36 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 
 void main()
 {
-    vec3 out_color = vec3(0.0);
+    vec4 out_color = vec4(0., 0., 0., 1.);
 
     //	vec3 new_norm = normalize(Normal);
     vec3 new_norm = getTexNormal();
 
     vec3 view_dir = normalize(cam_pos - WorldPos);
 
-    out_color += directionalLight(dir_light, new_norm, view_dir);
-    out_color += skydomeLight(new_norm, view_dir);
+    out_color.rgb += directionalLight(dir_light, new_norm, view_dir);
+    out_color.rgb += skydomeLight(new_norm, view_dir);
 
-    vec3 refract_ray = refract(view_dir, new_norm, 1.0 / 1.33);
-    float cos_val = dot(refract_ray, vec3(0, -1, 0));
-    float alpha;
-    if (cos_val > 0)
-    {
-        float refract_length = depth / cos_val;
-        alpha = clamp(1 - exp(-refract_length * 5), 0, 1);
-    }
-    else
-    {
-        alpha = 1.0;
-    }
+    out_color.a = getAttenuation(new_norm, view_dir);
 
-    out_color = out_color / (out_color + vec3(1.0));
-    out_color = pow(out_color, vec3(1.0 / 2.2));
+    out_color.rgb = out_color.rgb / (out_color.rgb + vec3(1.0));
+    out_color.rgb = pow(out_color.rgb, vec3(1.0 / 2.2));
 
+    out_color = addFoam(out_color);
+
+    // vec3 debug = max(vec3(0.0, 0.0, 0.0), -new_norm);
+    // FragColor = vec4(debug.y, 0.0, 0.0, 1.0);
+    FragColor = out_color;
+}
+
+vec4 addFoam(vec4 in_color)
+{
     // Foam texture will need its own PBR prior to HDR tonemapping, but... let's get it working
     // first
     float max_foam_depth = 0.5;
     float foam_alpha = 0;
-    //	if (surface_elev + max_foam_depth > 0)
+    vec4 out_color = in_color;
+
     if (TexCoords.y <= 1)
     {
         float v = 1 - clamp((max_foam_depth + surface_elev) / max_foam_depth, 0, 1);
@@ -108,22 +109,36 @@ void main()
         float f2 = 1 - clamp(-(blend_factor - 3 * PI / 2) / fade_time, 0, 1);
 
         foam_alpha = min(foam_color.a, max(f1, f2));
-        out_color = foam_color.rgb * foam_alpha + out_color * (1 - foam_alpha);
+        out_color.rgb = foam_color.rgb * foam_alpha + in_color.rgb * (1 - foam_alpha);
     }
 
     if (TexCoords.y < 0)
     {
         float fade_out_val = 0.15;
-        alpha = max(0.0, (fade_out_val + TexCoords.y) / fade_out_val);
+        out_color.a = max(0.0, (fade_out_val + TexCoords.y) / fade_out_val);
     }
     else
     {
-        alpha = max(foam_alpha, alpha);
+        out_color.a = max(foam_alpha, in_color.a);
     }
 
-    // vec3 debug = max(vec3(0.0, 0.0, 0.0), -new_norm);
-    // FragColor = vec4(debug.y, 0.0, 0.0, 1.0);
-    FragColor = vec4(out_color, alpha);
+    return out_color;
+}
+
+float getAttenuation(vec3 normal, vec3 view_dir)
+{
+    vec3 refract_ray = refract(view_dir, normal, 1.0 / 1.33);
+    float cos_val = dot(refract_ray, vec3(0, -1, 0));
+
+    if (cos_val > 0)
+    {
+        float refract_length = depth / cos_val;
+        return clamp(1 - exp(-refract_length * 5), 0, 1);
+    }
+    else
+    {
+        return 1.0;
+    }
 }
 
 vec3 skydomeLight(vec3 normal, vec3 view_dir)
@@ -227,7 +242,7 @@ vec3 getTexNormal()
         //		float k = 3;
         //		float angle = tex_waves[i].freq*dot(tex_waves[i].wave_dirs, vec2(WorldPos.x,
         //-WorldPos.z)) - tex_waves[i].phase; 		vec3 tmp; 		new_norm.x -= k *
-        //tex_waves[i].freq * tex_waves[i].wave_dirs.x * amp * cos(angle) * pow((sin(angle)+1)/2,
+        // tex_waves[i].freq * tex_waves[i].wave_dirs.x * amp * cos(angle) * pow((sin(angle)+1)/2,
         // k-1); 		new_norm.z -= k
         //* tex_waves[i].freq * -tex_waves[i].wave_dirs.y * amp * cos(angle) * pow((sin(angle)+1)/2,
         // k-1); 		new_norm.y += amp;
@@ -271,7 +286,10 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0) { return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); }
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
