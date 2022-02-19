@@ -13,8 +13,7 @@ target_sources(beach PRIVATE terrain.cpp terrain.hpp)
 target_sources(beach PRIVATE wave.cpp wave.hpp)
 target_sources(beach PRIVATE window_management.cpp window_management.hpp)
 
-# target_link_libraries(beach C:/lib/assimp-vc142-mtd.dll)
-target_link_libraries(beach C:/lib/assimp-vc142-mtd.lib)
+target_link_libraries(beach C:/lib/assimp-vc143-mt.lib)
 
 target_link_libraries(beach stbi)
 target_link_libraries(beach glad)
