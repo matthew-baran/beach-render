@@ -54,7 +54,9 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir);
 vec3 directionalLight(DirLight light, vec3 normal, vec3 view_dir);
 vec3 getTexNormal();
 float getAttenuation(vec3 normal, vec3 view_dir);
+vec4 hdrTonemap(vec4 in_color);
 vec4 addFoam(vec4 in_color);
+vec4 addWaveBreak(vec4 in_color);
 
 // PBR
 float DistributionGGX(vec3 N, vec3 H, float a);
@@ -77,14 +79,28 @@ void main()
 
     out_color.a = getAttenuation(new_norm, view_dir);
 
-    out_color.rgb = out_color.rgb / (out_color.rgb + vec3(1.0));
-    out_color.rgb = pow(out_color.rgb, vec3(1.0 / 2.2));
+    out_color = hdrTonemap(out_color);
 
     out_color = addFoam(out_color);
+    out_color = addWaveBreak(out_color);
 
     // vec3 debug = max(vec3(0.0, 0.0, 0.0), -new_norm);
     // FragColor = vec4(debug.y, 0.0, 0.0, 1.0);
     FragColor = out_color;
+}
+
+vec4 hdrTonemap(vec4 in_color)
+{
+    vec3 out_color = in_color.rgb;
+    out_color = out_color / (out_color + vec3(1.0));
+    out_color = pow(out_color, vec3(1.0 / 2.2));
+
+    return vec4(out_color, in_color.a);
+}
+
+vec4 addWaveBreak(vec4 in_color)
+{
+    return in_color;
 }
 
 vec4 addFoam(vec4 in_color)
@@ -97,9 +113,6 @@ vec4 addFoam(vec4 in_color)
 
     if (TexCoords.y <= 1)
     {
-        float v = 1 - clamp((max_foam_depth + surface_elev) / max_foam_depth, 0, 1);
-        float u = WorldPos.z / 5;
-        //		vec4 foam_color = texture(material.texture_diffuse2, vec2(u, v));
         vec4 foam_color = texture(material.texture_diffuse2, TexCoords);
 
         // warning, warning, this only works with single wave
@@ -161,7 +174,7 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir)
 
     vec3 F = kS;
 
-    ///////////////// specular experiment
+    // specular
     vec3 N = normal;
     vec3 R = reflect(-view_dir, normal);
     vec3 V = R;
@@ -171,10 +184,7 @@ vec3 skydomeLight(vec3 normal, vec3 view_dir)
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
     vec3 ambient = (kD * diffuse + specular);
-    // vec3 ambient = kD * diffuse;
-
     return ambient;
-    //	return (ambient + diffuse + specular);
 }
 
 vec3 directionalLight(DirLight light, vec3 normal, vec3 view_dir)
